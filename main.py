@@ -138,14 +138,13 @@ def process_playlist():
 
             logging.info(f"در حال دانلود ویدیوی جدید: {video_id}")
             
-            # تنظیمات برای دانلود ویدیو (4K روان بدون کدک AV1)
+# تنظیمات برای دانلود ویدیو (اجبار به دانلود یکپارچه برای جلوگیری از خطای fragment)
             download_opts = {
-                'format': 'bestvideo[vcodec!*=av01]+bestaudio/best',
+                'format': 'bestvideo[ext=mp4][protocol^=http]+bestaudio[ext=m4a][protocol^=http]/best[ext=mp4]/best',
                 'outtmpl': f'{DOWNLOAD_FOLDER}/%(title)s [{video_id}].%(ext)s',
                 'merge_output_format': 'mkv',
                 'cookiefile': 'cookies.txt',
                 'js_runtimes': {'node': {}},
-                'extractor_args': {'youtube': ['player_client=android,web,mweb']},
                 'sleep_interval': 5,
                 'max_sleep_interval': 10
             }
