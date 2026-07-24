@@ -20,6 +20,10 @@
 #    موتور Deno به طور پیش‌فرض توسط yt-dlp استفاده می‌شود اما در گیت‌هاب اکشنز به درستی در PATH قرار نمی‌گیرد.
 #    راه حل نهایی: نصب نسخه "yt-dlp[default]" و اجبار برنامه به استفاده از Node.js (که پیش‌فرض در گیت‌هاب نصب است)
 #    از طریق تنظیم کردن پارامتر 'js_runtimes': {'node': {}} در تنظیمات دانلود.
+#
+# ۷. محدودیت پخش تلویزیون‌های قدیمی (مدل ۲۰۱۲): عدم پشتیبانی از ویدیوهای 4K یا 60fps.
+#    راه حل: محدود کردن کیفیت دانلود به حداکثر 1080p و حداکثر 30 فریم بر ثانیه با افزودن
+#    فیلترهای [height<=1080] و [fps<=30] در تنظیمات فرمت دانلود.
 # ==============================================================================
 
 import os
@@ -138,9 +142,9 @@ def process_playlist():
 
             logging.info(f"در حال دانلود ویدیوی جدید: {video_id}")
             
-# تنظیمات برای دانلود ویدیو (اجبار به دانلود یکپارچه برای جلوگیری از خطای fragment)
+            # تنظیمات برای دانلود ویدیو (محدود شده به حداکثر 1080p و حداکثر 30 فریم بر ثانیه برای تلویزیون‌های قدیمی)
             download_opts = {
-                'format': 'bestvideo[ext=mp4][protocol^=http]+bestaudio[ext=m4a][protocol^=http]/best[ext=mp4]/best',
+                'format': 'bestvideo[height<=1080][fps<=30][ext=mp4][protocol^=http]+bestaudio[ext=m4a][protocol^=http]/best[height<=1080][fps<=30][ext=mp4]/best[height<=1080][fps<=30]',
                 'outtmpl': f'{DOWNLOAD_FOLDER}/%(title)s [{video_id}].%(ext)s',
                 'merge_output_format': 'mkv',
                 'cookiefile': 'cookies.txt',
