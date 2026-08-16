@@ -17,6 +17,9 @@
 #
 # ۶. چالش جاوااسکریپت (EJS): یوتیوب برای دانلود ویدیوها چالش n-parameter قرار داده که نیاز به موتور JS دارد.
 #    راه حل نهایی: نصب نسخه "yt-dlp[default]" و اجبار برنامه به استفاده از Node.js.
+#
+# ۷. خطای "Sign in to confirm you're not a bot" برای کتاب‌های صوتی و ویدیوهای محدودیت سنی:
+#    راه حل: اصلاح player_client برای استفاده از کلاینت‌های web_creator، web_music و web_safari که از کوکی‌ها پشتیبانی می‌کنند.
 # ==============================================================================
 
 import os
@@ -116,8 +119,8 @@ def process_playlist():
         'quiet': True,
         'cookiefile': COOKIE_FILE if os.path.exists(COOKIE_FILE) else None,
         'js_runtimes': {'node': {}},
-        # اضافه شدن کلاینت tv برای دور زدن خطای 403
-        'extractor_args': {'youtube': ['player_client=tv,android,web']}
+        # اضافه شدن کلاینت‌های مختلف برای دور زدن خطای 403 و مشکل ربات/محدودیت سنی (کتاب صوتی)
+        'extractor_args': {'youtube': ['player_client=web_safari,web_creator,web_music,web_embedded,mweb,tv_downgraded,ios,default']}
     }
 
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
@@ -152,8 +155,8 @@ def process_playlist():
                 'merge_output_format': 'mkv',
                 'cookiefile': COOKIE_FILE if os.path.exists(COOKIE_FILE) else None,
                 'js_runtimes': {'node': {}},
-                # اضافه شدن کلاینت tv برای دور زدن خطای 403
-                'extractor_args': {'youtube': ['player_client=tv,android,web']},
+                # اضافه شدن کلاینت‌های مختلف برای دور زدن خطای 403 و مشکل ربات/محدودیت سنی (کتاب صوتی)
+                'extractor_args': {'youtube': ['player_client=web_safari,web_creator,web_music,web_embedded,mweb,tv_downgraded,ios,default']},
                 'sleep_interval': 5,
                 'max_sleep_interval': 15, # افزایش زمان استراحت برای جلوگیری از بلاک شدن
                 'ignoreerrors': True # رد شدن از ویدیوهای مشکل‌دار (مثل Premiere) تا کل برنامه متوقف نشود
