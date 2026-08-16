@@ -18,8 +18,13 @@
 # ۶. چالش جاوااسکریپت (EJS): یوتیوب برای دانلود ویدیوها چالش n-parameter قرار داده که نیاز به موتور JS دارد.
 #    راه حل نهایی: نصب نسخه "yt-dlp[default]" و اجبار برنامه به استفاده از Node.js.
 #
-# ۷. خطای "Sign in to confirm you're not a bot" برای کتاب‌های صوتی و ویدیوهای محدودیت سنی:
-#    راه حل: اصلاح سینتکس دیکشنری player_client در پایتون برای استفاده از کلاینت‌های web_creator و web_music.
+# ۷. خطای "Video unavailable" برای کتاب‌های صوتی و موزیک‌ها:
+#    علت: کلاینت‌های tv و ios به محتوای YouTube Music دسترسی ندارند. باید از android یا web استفاده شود.
+#
+# ۸. خطای "Sign in to confirm you're not a bot" با وجود داشتن کوکی:
+#    علت: وقتی کوکی‌ها را در GitHub Secrets کپی می‌کنید، کاراکترهای Tab به Space تبدیل می‌شوند.
+#    yt-dlp فقط کوکی‌هایی که با Tab جدا شده‌اند را می‌خواند و بقیه را نادیده می‌گیرد!
+#    راه حل: تابعی نوشته شد که کوکی‌ها را می‌خواند و فاصله‌ها را دوباره به Tab تبدیل می‌کند.
 # ==============================================================================
 
 import os
@@ -35,13 +40,57 @@ from google.auth.transport.requests import Request
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 DOWNLOAD_FOLDER = 'downloads'
-# نام فایل کوکی دقیقاً مطابق با فایلی که در گیت‌هاب آپلود کرده‌اید تنظیم شد
 COOKIE_FILE = 'cookies.txt' 
 
 def setup_environment():
     # ساخت پوشه دانلود اگر وجود نداشته باشد
     if not os.path.exists(DOWNLOAD_FOLDER):
         os.makedirs(DOWNLOAD_FOLDER)
+        
+    # ---------------------------------------------------------
+    # 🔴 بخش بسیار مهم: اصلاح فرمت کوکی‌ها (تبدیل Space به Tab)
+    # ---------------------------------------------------------
+    cookies_env = os.environ.get("YOUTUBE_COOKIES")
+    if cookies_env:
+        try:
+            with open(COOKIE_FILE, "w", encoding="utf-8") as f:
+                for line in cookies_env.splitlines():
+                    line = line.strip()
+                    if not line or line.startswith('#'):
+                        f.write(line + '\n')
+                        continue
+                    
+                    # جدا کردن مقادیر (اسپیس یا تب فرقی نمی‌کند، همه را جدا می‌کند)
+                    parts = line.split()
+                    # فایل کوکی Netscape دقیقاً ۷ ستون دارد
+                    if len(parts) >= 7:
+                        # ۶ ستون اول را با تب به هم می‌چسبانیم، ستون هفتم (مقدار کوکی) ممکن است خودش اسپیس داشته باشد
+                        fixed_line = "\t".join(parts[:6]) + "\t" + " ".join(parts[6:]) + "\n"
+                        f.write(fixed_line)
+                    else:
+                        f.write(line + '\n')
+            logging.info("فایل کوکی‌ها از متغیر محیطی ساخته و فرمت آن (Tab) اصلاح شد.")
+        except Exception as e:
+            logging.error(f"خطا در ایجاد فایل کوکی: {e}")
+    elif os.path.exists(COOKIE_FILE):
+        try:
+            with open(COOKIE_FILE, "r", encoding="utf-8") as f:
+                lines = f.readlines()
+            with open(COOKIE_FILE, "w", encoding="utf-8") as f:
+                for line in lines:
+                    line = line.strip()
+                    if not line or line.startswith('#'):
+                        f.write(line + '\n')
+                        continue
+                    parts = line.split()
+                    if len(parts) >= 7:
+                        fixed_line = "\t".join(parts[:6]) + "\t" + " ".join(parts[6:]) + "\n"
+                        f.write(fixed_line)
+                    else:
+                        f.write(line + '\n')
+            logging.info("فرمت فایل کوکی‌های موجود اصلاح شد.")
+        except Exception as e:
+            logging.error(f"خطا در اصلاح فایل کوکی: {e}")
 
 def get_gdrive_service():
     # دریافت اطلاعات ورود به گوگل درایو
@@ -119,10 +168,10 @@ def process_playlist():
         'quiet': True,
         'cookiefile': COOKIE_FILE if os.path.exists(COOKIE_FILE) else None,
         'js_runtimes': {'node': {}},
-        # سینتکس صحیح دیکشنری برای پایتون
         'extractor_args': {
             'youtube': {
-                'player_client': ['web_creator', 'web_music', 'tv_downgraded', 'ios']
+                # استفاده از کلاینت‌های اصلی برای دسترسی به موزیک‌ها و کتاب‌های صوتی
+                'player_client': ['android', 'web', 'mweb', 'tv', 'ios']
             }
         }
     }
@@ -159,35 +208,32 @@ def process_playlist():
                 'merge_output_format': 'mkv',
                 'cookiefile': COOKIE_FILE if os.path.exists(COOKIE_FILE) else None,
                 'js_runtimes': {'node': {}},
-                # سینتکس صحیح دیکشنری برای پایتون
                 'extractor_args': {
                     'youtube': {
-                        'player_client': ['web_creator', 'web_music', 'tv_downgraded', 'ios']
+                        # استفاده از کلاینت‌های اصلی برای دسترسی به موزیک‌ها و کتاب‌های صوتی
+                        'player_client': ['android', 'web', 'mweb', 'tv', 'ios']
                     }
                 },
                 'sleep_interval': 5,
-                'max_sleep_interval': 15, # افزایش زمان استراحت برای جلوگیری از بلاک شدن
-                'ignoreerrors': True # رد شدن از ویدیوهای مشکل‌دار (مثل Premiere) تا کل برنامه متوقف نشود
+                'max_sleep_interval': 15,
+                'ignoreerrors': True
             }
             
             try:
                 with yt_dlp.YoutubeDL(download_opts) as dl:
                     info = dl.extract_info(video.get('url') or video_id, download=True)
                     
-                    # اگر ویدیو Premiere باشد یا در دسترس نباشد، info مقدار None برمی‌گرداند
                     if info is None:
                         logging.warning(f"امکان دانلود ویدیو {video_id} وجود ندارد (احتمالاً Premiere یا محدودیت سنی است).")
                         continue
 
                     file_path = dl.prepare_filename(info)
                     
-                    # بررسی مسیر فایل (گاهی اوقات به دلیل merge شدن، پسوند فایل تغییر می‌کند)
                     if not os.path.exists(file_path):
                         base_path = os.path.splitext(file_path)[0]
                         file_path = base_path + '.mkv'
 
                     if os.path.exists(file_path):
-                        # اگر آپلود موفق بود، فایل را پاک کن
                         if upload_to_gdrive(service, folder_id, file_path):
                             os.remove(file_path)
                             logging.info("فایل از روی سرور پاک شد تا فضا اشغال نشود.")
