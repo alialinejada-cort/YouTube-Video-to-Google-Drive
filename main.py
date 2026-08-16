@@ -19,7 +19,7 @@
 #    راه حل نهایی: نصب نسخه "yt-dlp[default]" و اجبار برنامه به استفاده از Node.js.
 #
 # ۷. خطای "Sign in to confirm you're not a bot" برای کتاب‌های صوتی و ویدیوهای محدودیت سنی:
-#    راه حل: اصلاح player_client برای استفاده از کلاینت‌های web_creator، web_music و web_safari که از کوکی‌ها پشتیبانی می‌کنند.
+#    راه حل: اصلاح سینتکس دیکشنری player_client در پایتون برای استفاده از کلاینت‌های web_creator و web_music.
 # ==============================================================================
 
 import os
@@ -119,8 +119,12 @@ def process_playlist():
         'quiet': True,
         'cookiefile': COOKIE_FILE if os.path.exists(COOKIE_FILE) else None,
         'js_runtimes': {'node': {}},
-        # اضافه شدن کلاینت‌های مختلف برای دور زدن خطای 403 و مشکل ربات/محدودیت سنی (کتاب صوتی)
-        'extractor_args': {'youtube': ['player_client=web_safari,web_creator,web_music,web_embedded,mweb,tv_downgraded,ios,default']}
+        # سینتکس صحیح دیکشنری برای پایتون
+        'extractor_args': {
+            'youtube': {
+                'player_client': ['web_creator', 'web_music', 'tv_downgraded', 'ios']
+            }
+        }
     }
 
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
@@ -155,8 +159,12 @@ def process_playlist():
                 'merge_output_format': 'mkv',
                 'cookiefile': COOKIE_FILE if os.path.exists(COOKIE_FILE) else None,
                 'js_runtimes': {'node': {}},
-                # اضافه شدن کلاینت‌های مختلف برای دور زدن خطای 403 و مشکل ربات/محدودیت سنی (کتاب صوتی)
-                'extractor_args': {'youtube': ['player_client=web_safari,web_creator,web_music,web_embedded,mweb,tv_downgraded,ios,default']},
+                # سینتکس صحیح دیکشنری برای پایتون
+                'extractor_args': {
+                    'youtube': {
+                        'player_client': ['web_creator', 'web_music', 'tv_downgraded', 'ios']
+                    }
+                },
                 'sleep_interval': 5,
                 'max_sleep_interval': 15, # افزایش زمان استراحت برای جلوگیری از بلاک شدن
                 'ignoreerrors': True # رد شدن از ویدیوهای مشکل‌دار (مثل Premiere) تا کل برنامه متوقف نشود
